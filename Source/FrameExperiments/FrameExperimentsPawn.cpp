@@ -33,7 +33,7 @@ AFrameExperimentsPawn::AFrameExperimentsPawn()
 	{
 		ConstructorHelpers::FObjectFinderOptional<UStaticMesh> PlaneMesh;
 		FConstructorStatics()
-			: PlaneMesh(TEXT("/Game/Flying/Meshes/UFO.UFO"))
+			: PlaneMesh(TEXT("StaticMesh'/Game/Flying/Meshes/PlaneMesh.PlaneMesh'"))
 		{
 		}
 	};
@@ -48,7 +48,7 @@ AFrameExperimentsPawn::AFrameExperimentsPawn()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm0"));
 	SpringArm->SetupAttachment(RootComponent);	// Attach SpringArm to RootComponent
 	SpringArm->TargetArmLength = 160.0f; // The camera follows at this distance behind the character	
-	SpringArm->SocketOffset = FVector(0.f,0.f,60.f);
+	SpringArm->SocketOffset = FVector(0.f,0.f,0.f);
 	SpringArm->bEnableCameraLag = false;	// Do not allow camera to lag
 	SpringArm->CameraLagSpeed = 15.f;
 
@@ -63,27 +63,23 @@ AFrameExperimentsPawn::AFrameExperimentsPawn()
 	MaxSpeed = 4000.f;
 	MinSpeed = 500.f;
 	CurrentForwardSpeed = 500.f;
+
+	// Set Material
+	static ConstructorHelpers::FObjectFinder<UMaterial> TexMatObj(TEXT("Material'/Game/Flying/Meshes/BatMat.BatMat'"));
+	if (TexMatObj.Succeeded())
+	{
+		PlaneMesh->SetMaterial(0, TexMatObj.Object);
+	}
 }
 
 void AFrameExperimentsPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MyTex = UTexture2D::CreateTransient(800, 600, PF_B8G8R8A8);
+	ReadbackBuffer = new uint8[800 * 600 * 4];
 
-	// Setup texture dynamicly
-	DynamicMatInstance = PlaneMesh->CreateAndSetMaterialInstanceDynamic(0);
-	if (DynamicMatInstance)
-	{
-		//DynamicMatInstance->SetTextureParameterValue(FName("BatTex"), MyTex);
-	}
-
-	// Read Player Controller
 	PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	UE_LOG(LogTemp, Warning, TEXT("PlayerController %p"), PlayerController);
-
-	// Initialize buffer
-	ReadbackBuffer = new uint8[800 * 600 * 4];
 
 	// Register slate rendered delegate
 	FSlateRenderer* SlateRenderer = FSlateApplication::Get().GetRenderer();//.Get();
@@ -249,13 +245,15 @@ void AFrameExperimentsPawn::Tick(float DeltaSeconds)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("bIsBufferReady && MyTex"));
 
+		FMemory::Memcpy(dtBuffer, ReadbackBuffer, 800 * 600 * 4);
+		UpdateTexture();
 
-		void* TextureData = MyTex->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-		FMemory::Memcpy(TextureData, ReadbackBuffer, 800 * 600 * 4);
-		MyTex->PlatformData->Mips[0].BulkData.Unlock();
-		MyTex->UpdateResource();
+		//void* TextureData = MyTex->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+		//FMemory::Memcpy(TextureData, ReadbackBuffer, 800 * 600 * 4);
+		//MyTex->PlatformData->Mips[0].BulkData.Unlock();
+		//MyTex->UpdateResource();
 	}
-}
+} 
 
 
 bool AFrameExperimentsPawn::FindViewportGeometry_Bat(TSharedPtr<SWindow> Window, FGeometry& OutGeometry)const
@@ -371,4 +369,128 @@ void AFrameExperimentsPawn::BeginDestroy()
 
 	delete[](uint8*)ReadbackBuffer;
 	ReadbackBuffer = nullptr;
+}
+
+void AFrameExperimentsPawn::UpdateTextureRegions(UTexture2D * Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D * Regions, uint32 SrcPitch, uint32 SrcBpp, uint8 * SrcData, bool bFreeData)
+{
+	UE_LOG(LogTemp, Warning, TEXT("---------- UpdateTextureRegions ----------"));
+
+
+	if (Texture && Texture->Resource)
+	{
+		struct FUpdateTextureRegionsData
+		{
+			FTexture2DResource* Texture2DResource;
+			int32 MipIndex;
+			uint32 NumRegions;
+			FUpdateTextureRegion2D* Regions;
+			uint32 SrcPitch;
+			uint32 SrcBpp;
+			uint8* SrcData;
+		};
+
+		FUpdateTextureRegionsData* RegionData = new FUpdateTextureRegionsData;
+
+		RegionData->Texture2DResource = (FTexture2DResource*)Texture->Resource;
+		RegionData->MipIndex = MipIndex;
+		RegionData->NumRegions = NumRegions;
+		RegionData->Regions = Regions;
+		RegionData->SrcPitch = SrcPitch;
+		RegionData->SrcBpp = SrcBpp;
+		RegionData->SrcData = SrcData;
+
+		ENQUEUE_UNIQUE_RENDER_COMMAND_TWOPARAMETER(
+			UpdateTextureRegionsData,
+			FUpdateTextureRegionsData*, RegionData, RegionData,
+			bool, bFreeData, bFreeData,
+			{
+				for (uint32 RegionIndex = 0; RegionIndex < RegionData->NumRegions; ++RegionIndex)
+				{
+					int32 CurrentFirstMip = RegionData->Texture2DResource->GetCurrentFirstMip();
+					if (RegionData->MipIndex >= CurrentFirstMip)
+					{
+						RHIUpdateTexture2D(
+							RegionData->Texture2DResource->GetTexture2DRHI(),
+							RegionData->MipIndex - CurrentFirstMip,
+							RegionData->Regions[RegionIndex],
+							RegionData->SrcPitch,
+							RegionData->SrcData
+							+ RegionData->Regions[RegionIndex].SrcY * RegionData->SrcPitch
+							+ RegionData->Regions[RegionIndex].SrcX * RegionData->SrcBpp
+						);
+					}
+				}
+
+		if (bFreeData)
+		{
+			FMemory::Free(RegionData->Regions);
+			FMemory::Free(RegionData->SrcData);
+		}
+		delete RegionData;
+			});
+	}
+}
+
+void AFrameExperimentsPawn::CreateTexture(bool argForceMake)
+{
+	UE_LOG(LogTemp, Warning, TEXT("---------- Creating Texture! ----------"));
+
+	// check to see if we actually need to make all this from scratch
+	if (DynamicMatInstance == nullptr || MyTex == nullptr || argForceMake == true) {
+
+		// dynamic texture properties (hard wired here for now)
+		dtBytesPerPixel = 4;
+		dtWidth = 800;
+		dtHeight = 600;
+
+		// create buffers to collate pixel data into
+		dtBufferSize = dtWidth * dtHeight * dtBytesPerPixel;
+		dtBufferSizeSqrt = dtWidth * dtBytesPerPixel;
+		dtBuffer = new uint8[dtBufferSize]; // this is the data that we Memcpy into the dynamic texture
+											// Initialize buffer
+
+											// Create dynamic material
+		DynamicMatInstance = PlaneMesh->CreateAndSetMaterialInstanceDynamic(0);
+
+		// create dynamic texture
+		MyTex = UTexture2D::CreateTransient(dtWidth, dtHeight);
+		MyTex->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		MyTex->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		MyTex->SRGB = 0;
+		MyTex->AddToRoot();		// Guarantee no garbage collection by adding it as a root reference
+		MyTex->UpdateResource();	// Update the texture with new variable values.
+
+										// plug the dynamic texture into the dynamic material
+		DynamicMatInstance->SetTextureParameterValue(FName("BaseTex"), MyTex);
+
+		// Create a new texture region with the width and height of our dynamic texture
+		dtUpdateTextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, dtWidth, dtHeight);
+	}
+
+}
+void AFrameExperimentsPawn::UpdateTexture()
+{
+	int dtBufferSizeSqrt = 800 * 4;
+	UpdateTextureRegions(MyTex, 0, 1, dtUpdateTextureRegion, dtBufferSizeSqrt, (uint32)4, dtBuffer, false);
+
+	DynamicMatInstance->SetTextureParameterValue(FName("BaseTex"), MyTex);
+}
+
+void AFrameExperimentsPawn::OnConstruction(const FTransform & Transform)
+{
+	Super::OnConstruction(Transform);
+
+	UE_LOG(LogTemp, Warning, TEXT("---------- OnConstruction ----------"));
+
+	CreateTexture(true); // do force new texture
+	UpdateTexture();
+}
+
+void AFrameExperimentsPawn::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	UE_LOG(LogTemp, Warning, TEXT("---------- PostInitializeComponents ----------"));
+
+	CreateTexture(true); // do force new texture
+	UpdateTexture();
 }

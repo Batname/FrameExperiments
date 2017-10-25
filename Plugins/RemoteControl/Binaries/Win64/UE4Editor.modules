@@ -4,7 +4,7 @@
 	"BuildId" : "7d5229ac-d3e2-4191-ac6f-9a43d8706aee",
 	"Modules" : 
 	{
-		"RemoteControl" : "UE4Editor-RemoteControl-383.dll",
-		"RemoteControlHMD" : "UE4Editor-RemoteControlHMD-3969.dll"
+		"RemoteControl" : "UE4Editor-RemoteControl-8981.dll",
+		"RemoteControlHMD" : "UE4Editor-RemoteControlHMD-2645.dll"
 	}
 }

@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Runtime/SlateCore/Public/Layout/Geometry.h"
+#include "Runtime/RHI/Public/RHI.h"
 #include "FrameExperimentsPawn.generated.h"
 
 UCLASS(Config=Game)
@@ -107,4 +108,30 @@ private:
 	bool FindViewportGeometry_Bat(TSharedPtr<SWindow> WindowWidget, FGeometry& OutGeometry)const;
 	bool FindViewportGeometryInternal_Bat(const FGeometry& Geometry, TSharedPtr<SWidget> Widget, FGeometry& OutGeometry)const;
 
+
+	void UpdateTextureRegions(class UTexture2D* Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D* Regions, uint32 SrcPitch, uint32 SrcBpp, uint8* SrcData, bool bFreeData);
+
+
+	// Dynamic texture methods
+	void CreateTexture(bool argForceMake);
+	void UpdateTexture();
+
+	// update class instances in the editor if changes are made to their properties
+	virtual void OnConstruction(const FTransform& Transform) override;
+
+	// Called after the actors components have been initialized
+	virtual void PostInitializeComponents() override;
+
+
+	// dTex res
+	int dtWidth;
+	int dtHeight;
+	int dtBytesPerPixel;
+
+	// dTex buffer
+	uint8 *dtBuffer;
+	int dtBufferSize;
+	int dtBufferSizeSqrt;
+
+	FUpdateTextureRegion2D* dtUpdateTextureRegion;
 };
