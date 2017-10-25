@@ -1,0 +1,82 @@
+
+Preview : https://youtu.be/xw4s42nI0Jw
+VR Preview: https://youtu.be/cuba0H2TYog
+
+#######################
+# System Requirements #
+#######################
+- Supports both Windows and Mac.
+- Android & iOS devices can be used with this plugin.
+
+
+######################
+# Installation Guide #
+######################
+
+There is no specified installation quide. Just install the plugin and it is done.
+
+Note 1: For USB connection you should install Android SDK (For installation process please follow these steps: https://docs.unrealengine.com/latest/INT/Platforms/Android/GettingStarted/1/index.html)
+Note 2: You don't need anything if you just want to use via Wi-Fi.
+
+In order to use the plugin you need install the application to your device.
+= App store links =
+Android: https://play.google.com/store/apps/details?id=com.mstf.remotecontrol
+iOS: https://itunes.apple.com/us/app/ue-remote-control/id1115228539?l=tr&ls=1&mt=8
+
+##############
+# User Guide #
+##############
+
+After the installation, connect your mobile device via USB (Android only) and Play in Editor. That's it.
+
+- How I can connect my device via wireless -
+1. Go "Edit -> Editor Preferences -> Plugins -> Remote Control"
+2. Change Communication to "Wi-Fi"
+3. Put ip address of device. You can see ip address of device by opening Android or iOS application. You can see it bottom left.
+
+- General Settings -
+You can completly disable remote control by unchecking "Is Enabled" instead of disable of plugin.
+You can change frame rate, resolution and quality. If your device is Low-End you can adjust these settings for reduce latency.
+If you don't like the quality of stream, you can always increase the quality. But when you increase the quality, you will get more latency.
+
+- Multiplayer -
+You can connect up to 4 device to editor. So you can control diffrent client with screen sharing support.  (Not recommended more than 2 client.)
+To use this feature;
+	1. Go "Edit -> Editor Preferences -> Plugins -> Remote Control"
+	2. Check "Enable Additional Controllers"
+	3. Add ip address of each additional device.
+	4. Play/Test your game (with using editor multiplayer support)
+	5. Configure your "Controller ID" in the mobile device. To configure this, tap Settings button and change your controller id (1=Client1, 2=Client2, 3=Client3, 4=Client4).
+	   You can also change controller id while playing game, so you can switch controllers anytime.
+
+- Virtual Reality -
+1. Head Tracking will be work automatically when you launch your game in the "VR Preview"
+2. If you want Head Traking in the editor viewport just check "Enable Head Tracking" in the plugin settings (Edit -> Editor Preferences -> Remote Control).
+3. Head Tracking currently supporting only on Android devices.
+
+- Notes -
+1. You cannot use USB communication for additional controllers.
+2. If you want change "Controller ID" settings while playing, just tap with four fingers and settings button will be appear.
+3. Currently iOS devices doesn't support USB communication. Will be support future releases.
+4. If your game streching on mobile device, Play the game in New Editor Window and don't forgot the change window size to resolution of mobile device. 
+4. Orientation of game/device will be changed automatically.
+
+#####################
+# Technical Details #
+#####################
+- Supports Android & iOS
+- Screen Sharing. (You can see your game on your mobile device.)
+- You can connect your device via USB* or Wi-Fi connection. (*iOS currently not supported. Will be support future releases.)
+- Supports Acceleration, Gravity, RotationRate and Tilt.
+- Low latency.
+- Multiplayer Support. You can connect multiple (up to 4) mobile device and each device can control diffrent character. Also supports screen sharing of clients.
+- VR Head Tracking (Orientation)
+- 3D Stereo View (Tested with VR Box)
+
+Note: VR only supported with Android devices.
+
+##############################################################
+# What does your plugin do/What is the intent of your plugin #
+##############################################################
+
+This plugin enables to you quickly and easily play/test your game on mobile device. You don't need to package your game.

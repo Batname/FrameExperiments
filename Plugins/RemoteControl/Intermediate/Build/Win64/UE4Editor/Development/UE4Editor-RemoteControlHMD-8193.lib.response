@@ -1,0 +1,13 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UE4Editor-RemoteControlHMD-8193.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"C:\Program Files\Epic Games\UE_4.17\Engine\Intermediate\Build\Win64\UE4Editor\Development\Engine\SharedPCH.Engine.h.obj"
+"D:\Windows\UE4\FrameExperiments\Plugins\RemoteControl\Intermediate\Build\Win64\UE4Editor\Development\RemoteControlHMD\Module.RemoteControlHMD.cpp.obj"
+"C:\Program Files\Epic Games\UE_4.17\Engine\Intermediate\Build\Win64\UE4Editor\Development\RemoteControlHMD\PCLaunch.rc.res"
+"C:\Program Files\Epic Games\UE_4.17\Engine\Intermediate\Build\Win64\UE4Editor\Development\ModuleVersionResource.rc.inl.res"
+/OUT:"D:\Windows\UE4\FrameExperiments\Plugins\RemoteControl\Intermediate\Build\Win64\UE4Editor\Development\UE4Editor-RemoteControlHMD-8193.lib"

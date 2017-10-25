@@ -75,8 +75,12 @@ void AFrameExperimentsPawn::BeginPlay()
 	DynamicMatInstance = PlaneMesh->CreateAndSetMaterialInstanceDynamic(0);
 	if (DynamicMatInstance)
 	{
-		DynamicMatInstance->SetTextureParameterValue(FName("BatTex"), MyTex);
+		//DynamicMatInstance->SetTextureParameterValue(FName("BatTex"), MyTex);
 	}
+
+	// Read Player Controller
+	PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController %p"), PlayerController);
 
 	// Initialize buffer
 	ReadbackBuffer = new uint8[800 * 600 * 4];
@@ -94,9 +98,9 @@ void AFrameExperimentsPawn::OnSlateRendered(SWindow& SlateWindow, void* Viewport
 	UGameViewportClient* GameViewportClient = GEngine->GameViewport;
 	check(GameViewportClient != nullptr);
 
-	FVector2D WindowSize(800, 600);
-	FVector2D UV = WindowSize / 2;
-	FVector2D UVSize = WindowSize / 2;
+	FVector2D WindowSize = GameViewportClient->GetWindow()->GetSizeInScreen();
+	FVector2D UV = BatPosition / WindowSize;
+	FVector2D UVSize = BatSize / WindowSize;
 
 	struct FCopyVideoFrame
 	{
@@ -183,12 +187,13 @@ void AFrameExperimentsPawn::OnSlateRendered(SWindow& SlateWindow, void* Viewport
 		);
 
 		// Test update texture
-		UE_LOG(LogTemp, Warning, TEXT("ViewportBackBuffer->GetSizeX() %d"), ViewportBackBuffer->GetSizeX());
-		UE_LOG(LogTemp, Warning, TEXT("ViewportBackBuffer->GetSizeY() %d"), ViewportBackBuffer->GetSizeY());
+		//UE_LOG(LogTemp, Warning, TEXT("ViewportBackBuffer->GetSizeX() %d"), ViewportBackBuffer->GetSizeX());
+		//UE_LOG(LogTemp, Warning, TEXT("ViewportBackBuffer->GetSizeY() %d"), ViewportBackBuffer->GetSizeY());
 
-		UE_LOG(LogTemp, Warning, TEXT("in render callback Rect %s"), *Rect.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("in render callback OutData.Num() %s"), *OutData[0].ToString());
-		UE_LOG(LogTemp, Warning, TEXT("in render callback OutData.Num() %s"), *OutData[10000].ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("in render callback Rect %s"), *Rect.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("in render callback OutData.Num() 0 %s"), *OutData[0].ToString());
+		UE_LOG(LogTemp, Warning, TEXT("in render callback OutData.Num() 100 %s"), *OutData[100].ToString());
+		UE_LOG(LogTemp, Warning, TEXT("in render callback OutData.Num() 10000 %s"), *OutData[10000].ToString());
 
 
 		// BGRA to RGBA
@@ -224,15 +229,76 @@ void AFrameExperimentsPawn::Tick(float DeltaSeconds)
 	// Call any parent class Tick implementation
 	Super::Tick(DeltaSeconds);
 
+
+	// Update Viewport geometry
+	if (PlayerController && PlayerController->GetLocalPlayer())
+	{
+		UGameViewportClient* GameViewportClient = PlayerController->GetLocalPlayer()->ViewportClient;
+		FGeometry ViewportGeometry;
+		const bool bResult = FindViewportGeometry_Bat(GameViewportClient->GetWindow(), ViewportGeometry);
+		if (bResult)
+		{
+			BatPosition = ViewportGeometry.LocalToAbsolute(FVector2D::ZeroVector);
+			BatSize = ViewportGeometry.GetLocalSize();
+		}
+	}
+
+
 	// Update texture
 	if (bIsBufferReady && MyTex)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("bIsBufferReady && MyTex"));
+
+
 		void* TextureData = MyTex->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 		FMemory::Memcpy(TextureData, ReadbackBuffer, 800 * 600 * 4);
 		MyTex->PlatformData->Mips[0].BulkData.Unlock();
 		MyTex->UpdateResource();
 	}
 }
+
+
+bool AFrameExperimentsPawn::FindViewportGeometry_Bat(TSharedPtr<SWindow> Window, FGeometry& OutGeometry)const
+{
+	if (Window.IsValid())
+	{
+		return FindViewportGeometryInternal_Bat(Window->GetWindowGeometryInWindow(), Window, OutGeometry);
+	}
+
+	return false;
+}
+
+bool AFrameExperimentsPawn::FindViewportGeometryInternal_Bat(const FGeometry& Geometry, TSharedPtr<SWidget> Widget, FGeometry& OutGeometry)const
+{
+	FArrangedChildren ArrangedChildren(EVisibility::Visible);
+	Widget->ArrangeChildren(Geometry, ArrangedChildren);
+	for (int32 Index = 0; Index < ArrangedChildren.Num(); ++Index)
+	{
+		TSharedPtr<SWidget> ChildWidget = ArrangedChildren[Index].Widget;
+		FGeometry ChildGeometry = ArrangedChildren[Index].Geometry;
+
+		//@todo: Don't understand why casting not working??? It's always return true .IsValid()
+		//TSharedPtr<SViewport> Viewport = StaticCastSharedPtr<SViewport>(ChildWidget);
+		// !!! OK !!! I know now why it is not working. We need dynamic cast. My Bad :{
+		static FName NAME_Viewport(TEXT("SGameLayerManager"));
+		if (ChildWidget->GetType() == NAME_Viewport)
+		{
+			OutGeometry = ArrangedChildren[Index].Geometry;
+			return true;
+		}
+		else
+		{
+			const bool bResult = FindViewportGeometryInternal_Bat(ChildGeometry, ChildWidget, OutGeometry);
+			if (bResult)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 
 void AFrameExperimentsPawn::NotifyHit(class UPrimitiveComponent* MyComp, class AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {

@@ -3,6 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Runtime/SlateCore/Public/Layout/Geometry.h"
 #include "FrameExperimentsPawn.generated.h"
 
 UCLASS(Config=Game)
@@ -97,11 +98,13 @@ private:
 	bool bIsBufferReady = false;
 
 	UMaterialInstanceDynamic* DynamicMatInstance;
+
+
+	APlayerController* PlayerController;
+
+	FVector2D BatPosition = FVector2D::ZeroVector;
+	FVector2D BatSize = FVector2D::ZeroVector;
+	bool FindViewportGeometry_Bat(TSharedPtr<SWindow> WindowWidget, FGeometry& OutGeometry)const;
+	bool FindViewportGeometryInternal_Bat(const FGeometry& Geometry, TSharedPtr<SWidget> Widget, FGeometry& OutGeometry)const;
+
 };
-
-
-// copy to texture
-//void* TextureData = MyTex->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-//FMemory::Memcpy(TextureData, OutData.GetData(), 800 * 600 * 4);
-//MyTex->PlatformData->Mips[0].BulkData.Unlock();
-//MyTex->UpdateResource();

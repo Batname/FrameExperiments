@@ -1,0 +1,39 @@
+{
+	"FileVersion" : 3,
+	"Version" : 4,
+	"VersionName" : "4.0",
+	"FriendlyName" : "Remote Control",
+	"Description" : "Remotely control the games from your Android or iPhone device with screen sharing support.",
+	"Category" : "Misc",
+	"CreatedBy" : "Mustafa TOP",
+	"CreatedByURL" : "https://forums.unrealengine.com/member.php?22103-MSTF",
+	"DocsURL" : "https://drive.google.com/open?id=0BzpM3WOixgUvQTJmc0kxM3AxQkE",
+	"MarketplaceURL" : "com.epicgames.launcher://ue/marketplace/content/7b17de89308242e7bb95399fcbc6df3b",
+	"SupportURL" : "https://forums.unrealengine.com/showthread.php?93034-Remote-Control-Android-amp-IOS",
+	"EngineVersion" : "4.17.0",
+	"CanContainContent" : false,
+	"IsBetaVersion" : false,
+	"Installed" : true,
+	"RequiresBuildPlatform" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "RemoteControl",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"BlacklistPlatforms" :
+			[
+				"HTML5"
+			]
+		},
+		{
+			"Name" : "RemoteControlHMD",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"BlacklistPlatforms" :
+			[
+				"HTML5"
+			]
+		}
+	]
+}
